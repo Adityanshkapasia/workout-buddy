@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React from "react";
 import Link from "next/link";
-import { Moon, Sun } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { Moon, Sun, User } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(false);
+  const { status } = useSession();
+  const [darkMode, setDarkMode] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -46,14 +50,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   Workouts
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/profile"
-                  className="hover:text-accent-light dark:hover:text-accent-dark"
-                >
-                  Profile
-                </Link>
-              </li>
+              {status === "authenticated" ? (
+                <>
+                  <li>
+                    <Link
+                      href="/profile"
+                      className="hover:text-accent-light dark:hover:text-accent-dark"
+                    >
+                      Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => signOut()}
+                      className="hover:text-accent-light dark:hover:text-accent-dark"
+                    >
+                      Sign Out
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <Link
+                    href="/auth/signin"
+                    className="hover:text-accent-light dark:hover:text-accent-dark"
+                  >
+                    <User className="w-5 h-5" />
+                  </Link>
+                </li>
+              )}
               <li>
                 <button
                   onClick={toggleDarkMode}
