@@ -8,6 +8,11 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+export const metadata = {
+  title: "Workout Buddy",
+  description: "Your personal fitness companion",
+};
+
 export default function RootLayout({
   children,
 }: {
