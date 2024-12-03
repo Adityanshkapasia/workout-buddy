@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  password        String
+  themePreference String        @default("light")
+  workoutPosts    WorkoutPost[]
+  blogPosts       BlogPost[]
+  likes           Like[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model WorkoutPost {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  date        DateTime
+  tags        String[]
+  duration    Int
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  likes       Like[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BlogPost {
+  id              String   @id @default(uuid())
+  title           String
+  content         String
+  author          User     @relation(fields: [authorId], references: [id])
+  authorId        String
+  tags            String[]
+  publicationDate DateTime
+  likes           Like[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Like {
+  id        String      @id @default(uuid())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    String
+  workout   WorkoutPost? @relation(fields: [workoutId], references: [id])
+  workoutId String?
+  blog      BlogPost?   @relation(fields: [blogId], references: [id])
+  blogId    String?
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, workoutId])
+  @@unique([userId, blogId])
+}
+

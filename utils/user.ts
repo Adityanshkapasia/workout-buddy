@@ -1,73 +1,68 @@
-import fs from "fs/promises";
-import path from "path";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { UserModel, SafeUser } from "./auth.types";
 
-const USERS_FILE = path.join(process.cwd(), "data", "users.json");
+const prisma = new PrismaClient();
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  themePreference: string;
+}
 
 export async function createUser(
   name: string,
   email: string,
   password: string
-): Promise<SafeUser> {
-  const users = await getUsers();
-  const existingUser = users.find((user) => user.email === email);
-  if (existingUser) {
-    throw new Error("User already exists");
-  }
-
+): Promise<User> {
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser: UserModel = {
-    id: Date.now().toString(),
-    name,
-    email,
-    password: hashedPassword,
-  };
 
-  users.push(newUser);
-  await saveUsers(users);
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      themePreference: "light", // Default theme preference
+    },
+  });
 
-  // Return safe user object without password
-  return {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-  };
+  return user;
 }
 
 export async function validateUser(
   email: string,
   password: string
-): Promise<SafeUser | null> {
-  const users = await getUsers();
-  const user = users.find((user) => user.email === email);
+): Promise<User | null> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
   if (!user) {
     return null;
   }
 
   const isValid = await bcrypt.compare(password, user.password);
+
   if (!isValid) {
     return null;
   }
 
-  // Return safe user object without password
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-  };
+  return user;
 }
 
-async function getUsers(): Promise<UserModel[]> {
-  try {
-    const data = await fs.readFile(USERS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    console.error("Error reading users file:", error);
-    return [];
-  }
+export async function getUserById(id: string): Promise<User | null> {
+  return prisma.user.findUnique({
+    where: { id },
+  });
 }
 
-async function saveUsers(users: UserModel[]): Promise<void> {
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+export async function updateUserTheme(
+  id: string,
+  theme: string
+): Promise<User | null> {
+  return prisma.user.update({
+    where: { id },
+    data: { themePreference: theme },
+  });
 }
