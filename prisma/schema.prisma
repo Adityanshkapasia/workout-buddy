@@ -15,6 +15,7 @@ model User {
   name            String
   email           String        @unique
   password        String
+  bio             String?       // New field
   themePreference String        @default("light")
   workoutPosts    WorkoutPost[]
   blogPosts       BlogPost[]

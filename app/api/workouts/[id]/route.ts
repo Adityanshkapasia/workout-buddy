@@ -59,7 +59,7 @@ export async function PUT(
 
 // DELETE a specific workout
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const id = (await params).id;
