@@ -4,11 +4,33 @@ import { authOptions } from "../auth/[...nextauth]/auth";
 import prisma from "@/lib/prisma";
 
 // GET all workouts
-export async function GET() {
-  const workouts = await prisma.workoutPost.findMany({
-    include: { author: { select: { name: true } } },
-  });
-  return NextResponse.json(workouts);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "5");
+  const skip = (page - 1) * limit;
+
+  try {
+    const [workouts, totalCount] = await Promise.all([
+      prisma.workoutPost.findMany({
+        skip,
+        take: limit,
+        orderBy: { date: "desc" },
+        include: { author: { select: { name: true } } },
+      }),
+      prisma.workoutPost.count(),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({ workouts, totalPages, currentPage: page });
+  } catch (error) {
+    console.error("Error fetching workouts:", error);
+    return NextResponse.json(
+      { error: "Error fetching workouts" },
+      { status: 500 }
+    );
+  }
 }
 
 // POST a new workout
