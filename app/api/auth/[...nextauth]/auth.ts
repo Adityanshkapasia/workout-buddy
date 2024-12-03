@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { validateUser, getUserById } from "@/utils/user";
+import { validateUser } from "@/utils/user";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,32 +20,25 @@ export const authOptions: NextAuthOptions = {
           credentials.password
         );
         if (user) {
-          // Get the most up-to-date user data
-          const currentUser = await getUserById(user.id);
-          return currentUser
-            ? {
-                id: currentUser.id,
-                name: currentUser.name,
-                email: currentUser.email,
-                themePreference: currentUser.themePreference,
-              }
-            : null;
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            themePreference: user.themePreference,
+          };
         }
         return null;
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.themePreference = user.themePreference;
-      } else if (token.id) {
-        // Refresh user data on every token refresh
-        const currentUser = await getUserById(token.id);
-        if (currentUser) {
-          token.themePreference = currentUser.themePreference;
-        }
       }
       return token;
     },
@@ -60,4 +53,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
