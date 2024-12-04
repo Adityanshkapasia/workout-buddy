@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { useSocket } from "@/hooks/useSocket";
 
 interface WorkoutPostProps {
   id: string;
@@ -22,11 +23,28 @@ const WorkoutPost: React.FC<WorkoutPostProps> = ({
   date,
   duration,
   tags,
-  likes,
-  isLiked,
+  likes: initialLikes,
+  isLiked: initialIsLiked,
 }) => {
-  const [likeCount, setLikeCount] = useState(likes);
-  const [liked, setLiked] = useState(isLiked);
+  const [likeCount, setLikeCount] = useState(initialLikes);
+  const [liked, setLiked] = useState(initialIsLiked);
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("workoutLikeUpdate", (data) => {
+        if (data.workoutId === id) {
+          setLikeCount(data.likesCount);
+          setLiked(data.action === "added");
+        }
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("workoutLikeUpdate");
+      }
+    };
+  }, [socket, id]);
 
   const handleLike = async () => {
     try {
@@ -35,8 +53,9 @@ const WorkoutPost: React.FC<WorkoutPostProps> = ({
         headers: { "Content-Type": "application/json" },
       });
       if (response.ok) {
-        setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-        setLiked((prev) => !prev);
+        const data = await response.json();
+        setLikeCount(data.likesCount);
+        setLiked(!liked);
       }
     } catch (error) {
       console.error("Error liking post:", error);

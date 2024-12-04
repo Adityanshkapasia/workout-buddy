@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSocket } from "@/hooks/useSocket";
 
 interface Comment {
   id: string;
@@ -25,6 +26,22 @@ const Comments: React.FC<CommentsProps> = ({ postId, initialComments }) => {
   const { data: session } = useSession();
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState("");
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("newComment", (data) => {
+        if (data.workoutId === postId) {
+          setComments((prevComments) => [...prevComments, data.comment]);
+        }
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("newComment");
+      }
+    };
+  }, [socket, postId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +52,6 @@ const Comments: React.FC<CommentsProps> = ({ postId, initialComments }) => {
         body: JSON.stringify({ content: newComment, workoutId: postId }),
       });
       if (response.ok) {
-        const comment: Comment = await response.json();
-        setComments((prev) => [...prev, comment]);
         setNewComment("");
       }
     } catch (error) {

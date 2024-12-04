@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import Notifications from "./Notifications";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -55,6 +56,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     >
                       Sign Out
                     </button>
+                  </li>
+                  <li>
+                    <Notifications />
                   </li>
                 </>
               ) : (
