@@ -51,7 +51,7 @@ export default function Home() {
           </p>
         )}
         <WorkoutFeed
-          workouts={workouts}
+          initialWorkouts={workouts}
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}

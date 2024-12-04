@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import SearchAndFilter from "./SearchAndFilter";
 
 interface Workout {
   id: string;
@@ -8,23 +9,50 @@ interface Workout {
   date: string;
   duration: number;
   tags: string[];
+  likes: number;
 }
 
 interface WorkoutFeedProps {
-  workouts: Workout[];
+  initialWorkouts: Workout[];
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }
 
 const WorkoutFeed: React.FC<WorkoutFeedProps> = ({
-  workouts,
+  initialWorkouts,
   currentPage,
   totalPages,
   onPageChange,
 }) => {
+  const [workouts, setWorkouts] = useState(initialWorkouts);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("");
+
+  useEffect(() => {
+    const fetchWorkouts = async () => {
+      const response = await fetch(
+        `/api/workouts?page=${currentPage}&search=${searchQuery}&sort=${sortBy}`
+      );
+      const data = await response.json();
+      setWorkouts(data.workouts);
+    };
+    fetchWorkouts();
+  }, [currentPage, searchQuery, sortBy]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    onPageChange(1); // Reset to first page when searching
+  };
+
+  const handleSort = (sort: string) => {
+    setSortBy(sort);
+    onPageChange(1); // Reset to first page when sorting
+  };
+
   return (
     <div className="space-y-8">
+      <SearchAndFilter onSearch={handleSearch} onSort={handleSort} />
       {workouts.map((workout) => (
         <div
           key={workout.id}
@@ -50,12 +78,17 @@ const WorkoutFeed: React.FC<WorkoutFeedProps> = ({
               </span>
             ))}
           </div>
-          <Link
-            href={`/workouts/${workout.id}`}
-            className="mt-4 inline-block px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
-          >
-            View Details
-          </Link>
+          <div className="mt-4 flex justify-between items-center">
+            <Link
+              href={`/workouts/${workout.id}`}
+              className="inline-block px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
+            >
+              View Details
+            </Link>
+            <span className="text-gray-600 dark:text-gray-400">
+              Likes: {workout.likes}
+            </span>
+          </div>
         </div>
       ))}
       <div className="flex justify-center space-x-4 mt-8">
