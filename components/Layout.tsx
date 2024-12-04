@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Moon, Sun, User } from "lucide-react";
+import { User } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,19 +12,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { status } = useSession();
-  const [darkMode, setDarkMode] = React.useState(false);
-
-  React.useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-200">
@@ -80,16 +68,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </li>
               )}
               <li>
-                <button
-                  onClick={toggleDarkMode}
-                  className="p-2 rounded-full bg-secondary-light dark:bg-secondary-dark"
-                >
-                  {darkMode ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Moon className="w-5 h-5" />
-                  )}
-                </button>
+                <ThemeToggle />
               </li>
             </ul>
           </div>
