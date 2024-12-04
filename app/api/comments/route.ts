@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import prisma from "@/lib/prisma";
-import type { NextApiResponseServerIO } from "@/types/next";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -10,9 +9,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { content, workoutId } = await request.json();
-
   try {
+    const { content, workoutId } = await request.json();
+
     const comment = await prisma.comment.create({
       data: {
         content,
@@ -25,33 +24,19 @@ export async function POST(request: Request) {
         },
       },
     });
-    // Emit Socket.IO event
-    const res = request as unknown as NextApiResponseServerIO;
-    if (res.socket.server.io) {
-      res.socket.server.io.emit("newComment", {
-        workoutId,
-        comment: {
-          ...comment,
-          createdAt: comment.createdAt.toISOString(),
-          updatedAt: comment.updatedAt.toISOString(),
-        },
-      });
 
-      // Emit notification
-      res.socket.server.io.emit("newNotification", {
-        id: Date.now().toString(),
-        message: `New comment on a workout`,
-        createdAt: new Date().toISOString(),
-      });
-    }
-    return NextResponse.json(comment, { status: 201 });
+    // Convert dates to ISO strings to avoid serialization issues
+    const serializedComment = {
+      ...comment,
+      createdAt: comment.createdAt.toISOString(),
+      updatedAt: comment.updatedAt.toISOString(),
+    };
+
+    return NextResponse.json(serializedComment, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Error creating comment",
-      },
+      { error: "Error creating comment" },
       { status: 500 }
     );
   }

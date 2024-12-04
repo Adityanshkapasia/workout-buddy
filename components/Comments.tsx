@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { useSocket } from "@/hooks/useSocket";
 
 interface Comment {
   id: string;
@@ -26,25 +25,13 @@ const Comments: React.FC<CommentsProps> = ({ postId, initialComments }) => {
   const { data: session } = useSession();
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState("");
-  const socket = useSocket();
-
-  useEffect(() => {
-    if (socket) {
-      socket.on("newComment", (data) => {
-        if (data.workoutId === postId) {
-          setComments((prevComments) => [...prevComments, data.comment]);
-        }
-      });
-    }
-    return () => {
-      if (socket) {
-        socket.off("newComment");
-      }
-    };
-  }, [socket, postId]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       const response = await fetch(`/api/comments`, {
         method: "POST",
@@ -52,10 +39,16 @@ const Comments: React.FC<CommentsProps> = ({ postId, initialComments }) => {
         body: JSON.stringify({ content: newComment, workoutId: postId }),
       });
       if (response.ok) {
+        const createdComment: Comment = await response.json();
+        setComments((prevComments) => [...prevComments, createdComment]);
         setNewComment("");
+      } else {
+        console.error("Failed to post comment");
       }
     } catch (error) {
       console.error("Error posting comment:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -83,12 +76,14 @@ const Comments: React.FC<CommentsProps> = ({ postId, initialComments }) => {
             rows={3}
             placeholder="Write a comment..."
             required
+            disabled={isSubmitting}
           />
           <button
             type="submit"
-            className="mt-2 px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
+            className="mt-2 px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-dark transition-colors duration-200 disabled:opacity-50"
+            disabled={isSubmitting}
           >
-            Post Comment
+            {isSubmitting ? "Posting..." : "Post Comment"}
           </button>
         </form>
       )}
