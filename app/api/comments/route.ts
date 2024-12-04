@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import prisma from "@/lib/prisma";
+import type { NextApiResponseServerIO } from "@/types/next";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -24,6 +25,25 @@ export async function POST(request: Request) {
         },
       },
     });
+    // Emit Socket.IO event
+    const res = request as unknown as NextApiResponseServerIO;
+    if (res.socket.server.io) {
+      res.socket.server.io.emit("newComment", {
+        workoutId,
+        comment: {
+          ...comment,
+          createdAt: comment.createdAt.toISOString(),
+          updatedAt: comment.updatedAt.toISOString(),
+        },
+      });
+
+      // Emit notification
+      res.socket.server.io.emit("newNotification", {
+        id: Date.now().toString(),
+        message: `New comment on a workout`,
+        createdAt: new Date().toISOString(),
+      });
+    }
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);

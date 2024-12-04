@@ -45,6 +45,15 @@ const ioHandler = (req: NextApiRequest, res: CustomNextApiResponse) => {
       socket.on("disconnect", () => {
         console.log("Client disconnected");
       });
+
+      // Server-side notification example
+      setInterval(() => {
+        socket.emit("newNotification", {
+          id: Date.now().toString(),
+          message: "This is a server-generated notification",
+          createdAt: new Date().toISOString(),
+        });
+      }, 60000); // Emit a notification every minute (for demonstration purposes)
     });
   }
   res.end();

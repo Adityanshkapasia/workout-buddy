@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useSocket } from "@/hooks/useSocket";
+import { useSession } from "next-auth/react";
 
 interface WorkoutPostProps {
   id: string;
@@ -29,6 +30,7 @@ const WorkoutPost: React.FC<WorkoutPostProps> = ({
   const [likeCount, setLikeCount] = useState(initialLikes);
   const [liked, setLiked] = useState(initialIsLiked);
   const socket = useSocket();
+  const { data: session } = useSession();
 
   useEffect(() => {
     if (socket) {
@@ -47,6 +49,11 @@ const WorkoutPost: React.FC<WorkoutPostProps> = ({
   }, [socket, id]);
 
   const handleLike = async () => {
+    if (!session) {
+      // Handle unauthenticated user, maybe redirect to login
+      return;
+    }
+
     try {
       const response = await fetch(`/api/workouts/${id}/like`, {
         method: "POST",
@@ -56,6 +63,15 @@ const WorkoutPost: React.FC<WorkoutPostProps> = ({
         const data = await response.json();
         setLikeCount(data.likesCount);
         setLiked(!liked);
+
+        // Emit a notification
+        if (socket) {
+          socket.emit("newNotification", {
+            id: Date.now().toString(),
+            message: liked ? `You unliked "${title}"` : `You liked "${title}"`,
+            createdAt: new Date().toISOString(),
+          });
+        }
       }
     } catch (error) {
       console.error("Error liking post:", error);
